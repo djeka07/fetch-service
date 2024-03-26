@@ -1,9 +1,17 @@
 /* eslint-disable */
-import { ApiException, ErrorResponse, FetchOptions } from './fetch.service.type';
+import {
+  ApiException,
+  ErrorResponse,
+  FetchOptions,
+} from './fetch.service.type';
 
-const baseHeaders = { 'Content-Type': 'application/json', Accept: 'application/json' };
+const baseHeaders = {
+  'Content-Type': 'application/json',
+  Accept: 'application/json',
+};
 
-const isEmpty = (obj: unknown): boolean => !obj || Object.keys(obj).length === 0;
+const isEmpty = (obj: unknown): boolean =>
+  !obj || Object.keys(obj).length === 0;
 
 const getPath = (path: string | undefined) => {
   if (!path) {
@@ -17,7 +25,9 @@ const createQueriesFromArray = (key: string, array: string[]): string => {
   return array.map((a) => `${key}=${a}`).join('&');
 };
 
-const createQuery = (query: Record<string, string | number | undefined | string[]>): string => {
+const createQuery = (
+  query: Record<string, string | number | undefined | string[]>,
+): string => {
   if (isEmpty(query)) {
     return '';
   }
@@ -32,13 +42,17 @@ const createQuery = (query: Record<string, string | number | undefined | string[
     ?.join('&')}`;
 };
 
-const createOption = <T>({ method, body, headers }: Partial<FetchOptions<T>>) => ({
+const createOption = <T>({
+  method,
+  body,
+  headers,
+}: Partial<FetchOptions<T>>) => ({
   method: method || 'GET',
   body: !isEmpty(body) ? JSON.stringify(body) : undefined,
   headers: { ...baseHeaders, ...{ ...(headers || {}) } },
 });
 
-export default async <TIn = never, TOut = never>({
+const fetchService = async <TIn = never, TOut = never>({
   method,
   url,
   path,
@@ -46,11 +60,15 @@ export default async <TIn = never, TOut = never>({
   body,
   headers,
 }: FetchOptions<TIn>): Promise<TOut> => {
-  const http = typeof (<Window>window) === 'undefined' ? { fetch } : <Window>window;
+  const http =
+    typeof (<Window>window) === 'undefined' ? { fetch } : <Window>window;
   const url_ = `${url}${getPath(path)}${createQuery(query || {})}`;
   const options_ = createOption({ method, body, headers });
 
-  const response = await http.fetch(url_ as string & FetchOptions<TIn>, options_);
+  const response = await http.fetch(
+    url_ as string & FetchOptions<TIn>,
+    options_,
+  );
   return processResponse<TOut>(response);
 };
 
@@ -69,13 +87,15 @@ const processResponse = <T>(response: Response): Promise<T> => {
   } else if (status === 401) {
     return response.text().then((_responseText) => {
       let result401: any = null;
-      result401 = _responseText === '' ? null : <ErrorResponse>JSON.parse(_responseText);
+      result401 =
+        _responseText === '' ? null : <ErrorResponse>JSON.parse(_responseText);
       return throwException(status, _responseText, _headers, result401);
     });
   } else if (status === 403) {
     return response.text().then((_responseText) => {
       let result403: any = null;
-      result403 = _responseText === '' ? null : <ErrorResponse>JSON.parse(_responseText);
+      result403 =
+        _responseText === '' ? null : <ErrorResponse>JSON.parse(_responseText);
       return throwException(status, _responseText, _headers, result403);
     });
   } else if (status !== 200 && status !== 204) {
@@ -86,7 +106,14 @@ const processResponse = <T>(response: Response): Promise<T> => {
   return Promise.resolve<T>(<any>null);
 };
 
-function throwException(status: number, response: string, headers: { [key: string]: any }, result?: any): any {
+function throwException(
+  status: number,
+  response: string,
+  headers: { [key: string]: any },
+  result?: any,
+): any {
   if (result !== null && result !== undefined) throw result;
   else throw new ApiException(status, response, headers, null);
 }
+
+export { fetchService as fetch };
